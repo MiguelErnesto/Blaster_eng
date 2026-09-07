@@ -13,6 +13,9 @@
         "laravel/tinker": "^2.7",
         "laravel/ui": "^3.4"
     },
+    "suggest": {
+        "ext-pdo_sqlite": "Required when DB_CONNECTION=sqlite."
+    },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
         "laravel/sail": "^1.0.1",
