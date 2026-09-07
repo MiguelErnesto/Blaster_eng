@@ -44,6 +44,7 @@ Route::get('/', [App\Http\Controllers\FrontController::class, 'index'])->name('w
 
 Auth::routes();
 
+Route::get('/admin', [App\Http\Controllers\HomeController::class, 'index']);
 Route::get('/admin/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::resource('front', FrontController::class);
