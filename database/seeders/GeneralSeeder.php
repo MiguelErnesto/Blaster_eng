@@ -16,15 +16,17 @@ class GeneralSeeder extends Seeder
      */
     public function run()
     {
+        $appUrl = rtrim((string) env('APP_URL', 'http://localhost'), '/').'/';
+
         DB::table('mains')->truncate();
         DB::table('mains')->insert([
             'name' => 'BLASTER',
-            'front_url' => 'http://localhost:8000/',
+            'front_url' => $appUrl,
         ]);
 
         DB::table('front_previews')->truncate();
         DB::table('front_previews')->insert([
-            'url' => 'http://localhost:8000/'
+            'url' => $appUrl,
         ]);
 
         DB::table('navbars')->truncate();

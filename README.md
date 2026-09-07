@@ -1,8 +1,9 @@
 Blaster v2 README.MD
 
 FEATURES
-- php 8.1
+- php 8.2
 - laravel 9
+- mysql (MariaDB local via Docker; Railway MySQL in production)
 
 
 INSTALLING:
@@ -13,33 +14,22 @@ INSTALLING:
 
 3.- Install dependencies:
 
-composer install
+composer install --ignore-platform-reqs
 
-PHP needs the SQLite PDO driver (`pdo_sqlite`). On Ubuntu/Debian:
+4.- Start local MariaDB (port 3308; 3306/3307 already in use):
 
-sudo apt install php-sqlite3
+docker compose up -d
 
-If artisan fails with `could not find driver` / `PRAGMA foreign_keys = ON`, PHP loaded a custom `/usr/local/lib/libsqlite3` without `sqlite3_column_table_name`. Force the distro library:
-
-./scripts/sqlite-pdo.sh php artisan migrate --seed
-
-Or:
-
-export LD_LIBRARY_PATH=/lib/x86_64-linux-gnu
-php artisan migrate --seed
-
-4.- Create a new file database/my_db.sqlite  (or the name that your prefer)
-
-5.- Database access Seetings
+5.- Database settings
 
 copy .env.example and rename to .env
 
-Configure your databases seetings into file .env
-
-DB_CONNECTION=sqlite
-
-DB_DATABASE=database/my_db.sqlite
-Maybe you must include the absolute path
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3308
+DB_DATABASE=blaster
+DB_USERNAME=root
+DB_PASSWORD=secret
 
 6.- Generate de key project:
 
@@ -48,12 +38,12 @@ php artisan key:generate
 7.- Migrate and execute the seeders
 
 php artisan migrate --seed
-# if "could not find driver": ./scripts/sqlite-pdo.sh php artisan migrate --seed
 
 8.- Initialize your local web server
 
 9.- Accessing to Admin Panel:
 http://yourdomain/login
+http://yourdomain/admin
 
 user:	  admin@website.com
 password: 12345678
@@ -66,6 +56,7 @@ You may change your name, email and password in dashboard.
 
 Note: Maybe you must use http://yourdomain/public instead http://yourdomain/ depending your web server.
 
+Deploy: see docs/RAILWAY.md
+
 
 Enjoy it!
-

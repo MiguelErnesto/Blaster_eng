@@ -19,15 +19,13 @@ use function preg_replace;
 use function sprintf;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 use function substr_count;
 use function trim;
 use function var_export;
-use ReflectionIntersectionType;
 use ReflectionMethod;
-use ReflectionNamedType;
 use ReflectionParameter;
-use ReflectionUnionType;
 use SebastianBergmann\Template\Exception as TemplateException;
 use SebastianBergmann\Template\Template;
 use SebastianBergmann\Type\ReflectionMapper;
@@ -143,7 +141,7 @@ final class MockMethod
             $reference,
             $callOriginalMethod,
             $method->isStatic(),
-            $deprecation
+            $deprecation,
         );
     }
 
@@ -160,7 +158,7 @@ final class MockMethod
             '',
             false,
             false,
-            null
+            null,
         );
     }
 
@@ -191,15 +189,15 @@ final class MockMethod
     {
         if ($this->static) {
             $templateFile = 'mocked_static_method.tpl';
-        } elseif ($this->returnType->isNever() || $this->returnType->isVoid()) {
+        } elseif ($this->returnType->isNever() || $this->returnType->isVoid() || $this->mustNotReturnValue()) {
             $templateFile = sprintf(
                 '%s_method_never_or_void.tpl',
-                $this->callOriginalMethod ? 'proxied' : 'mocked'
+                $this->callOriginalMethod ? 'proxied' : 'mocked',
             );
         } else {
             $templateFile = sprintf(
                 '%s_method.tpl',
-                $this->callOriginalMethod ? 'proxied' : 'mocked'
+                $this->callOriginalMethod ? 'proxied' : 'mocked',
             );
         }
 
@@ -212,7 +210,7 @@ final class MockMethod
             $deprecationTemplate->setVar(
                 [
                     'deprecation' => var_export($deprecation, true),
-                ]
+                ],
             );
 
             $deprecation = $deprecationTemplate->render();
@@ -233,7 +231,7 @@ final class MockMethod
                 'reference'          => $this->reference,
                 'clone_arguments'    => $this->cloneArguments ? 'true' : 'false',
                 'deprecation'        => $deprecation,
-            ]
+            ],
         );
 
         return $template->render();
@@ -257,13 +255,23 @@ final class MockMethod
             } catch (TemplateException $e) {
                 throw new RuntimeException(
                     $e->getMessage(),
-                    (int) $e->getCode(),
-                    $e
+                    $e->getCode(),
+                    $e,
                 );
             }
         }
 
         return self::$templates[$filename];
+    }
+
+    /**
+     * @see https://wiki.php.net/rfc/deprecate-return-value-from-construct
+     */
+    private function mustNotReturnValue(): bool
+    {
+        $methodName = strtolower($this->methodName);
+
+        return $methodName === '__construct' || $methodName === '__destruct';
     }
 
     /**
@@ -274,6 +282,7 @@ final class MockMethod
     private static function getMethodParametersForDeclaration(ReflectionMethod $method): string
     {
         $parameters = [];
+        $types      = (new ReflectionMapper)->fromParameterTypes($method);
 
         foreach ($method->getParameters() as $i => $parameter) {
             $name = '$' . $parameter->getName();
@@ -285,19 +294,16 @@ final class MockMethod
                 $name = '$arg' . $i;
             }
 
-            $nullable        = '';
             $default         = '';
             $reference       = '';
             $typeDeclaration = '';
-            $type            = null;
-            $typeName        = null;
 
-            if ($parameter->hasType()) {
-                $type = $parameter->getType();
+            if (!$types[$i]->type()->isUnknown()) {
+                $typeDeclaration = $types[$i]->type()->asString() . ' ';
+            }
 
-                if ($type instanceof ReflectionNamedType) {
-                    $typeName = $type->getName();
-                }
+            if ($parameter->isPassedByReference()) {
+                $reference = '&';
             }
 
             if ($parameter->isVariadic()) {
@@ -308,30 +314,7 @@ final class MockMethod
                 $default = ' = null';
             }
 
-            if ($type !== null) {
-                if ($typeName !== 'mixed' && $parameter->allowsNull() && !$type instanceof ReflectionIntersectionType && !$type instanceof ReflectionUnionType) {
-                    $nullable = '?';
-                }
-
-                if ($typeName === 'self') {
-                    $typeDeclaration = $method->getDeclaringClass()->getName() . ' ';
-                } elseif ($typeName !== null) {
-                    $typeDeclaration = $typeName . ' ';
-                } elseif ($type instanceof ReflectionUnionType) {
-                    $typeDeclaration = self::unionTypeAsString(
-                        $type,
-                        $method->getDeclaringClass()->getName()
-                    );
-                } elseif ($type instanceof ReflectionIntersectionType) {
-                    $typeDeclaration = self::intersectionTypeAsString($type);
-                }
-            }
-
-            if ($parameter->isPassedByReference()) {
-                $reference = '&';
-            }
-
-            $parameters[] = $nullable . $typeDeclaration . $reference . $name . $default;
+            $parameters[] = $typeDeclaration . $reference . $name . $default;
         }
 
         return implode(', ', $parameters);
@@ -389,46 +372,20 @@ final class MockMethod
                 substr(
                     substr(
                         $parameterAsString,
-                        strpos($parameterAsString, '<optional> ') + strlen('<optional> ')
+                        strpos($parameterAsString, '<optional> ') + strlen('<optional> '),
                     ),
                     0,
-                    -2
-                )
+                    -2,
+                ),
             )[1];
             // @codeCoverageIgnoreStart
         } catch (\ReflectionException $e) {
             throw new ReflectionException(
                 $e->getMessage(),
-                (int) $e->getCode(),
-                $e
+                $e->getCode(),
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd
-    }
-
-    private static function unionTypeAsString(ReflectionUnionType $union, string $self): string
-    {
-        $types = [];
-
-        foreach ($union->getTypes() as $type) {
-            if ((string) $type === 'self') {
-                $types[] = $self;
-            } else {
-                $types[] = $type;
-            }
-        }
-
-        return implode('|', $types) . ' ';
-    }
-
-    private static function intersectionTypeAsString(ReflectionIntersectionType $intersection): string
-    {
-        $types = [];
-
-        foreach ($intersection->getTypes() as $type) {
-            $types[] = $type;
-        }
-
-        return implode('&', $types) . ' ';
     }
 }

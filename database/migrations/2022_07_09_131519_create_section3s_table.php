@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('section3s', function (Blueprint $table) {
             $table->id();
-            $table->string('description');
+            $table->text('description');
             $table->timestamps();
         });
     }

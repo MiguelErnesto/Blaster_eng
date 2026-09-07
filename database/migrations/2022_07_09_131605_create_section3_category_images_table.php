@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('section3_category_images', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('section3_category_id')->unsineg();
+            $table->unsignedBigInteger('section3_category_id');
             $table->foreign('section3_category_id')->references('id')->on('section3_categories')->onDelete("cascade");
             $table->string('image');
             $table->timestamps();
