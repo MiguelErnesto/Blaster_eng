@@ -15,10 +15,10 @@ return new class extends Migration
     {
         Schema::create('section5_tablas', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('section3_category_id')->unsineg();
+            $table->unsignedBigInteger('section3_category_id');
             $table->foreign('section3_category_id')->references('id')->on('section3_categories')->onDelete("cascade");
             $table->string('elemento');
-            $table->string('descripcion');
+            $table->text('descripcion');
             $table->string('u_m');
             $table->string('cantidad');
             $table->string('precio');
