@@ -58,6 +58,8 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    'front_preview_url' => 'https://blastereng-production.up.railway.app/',
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

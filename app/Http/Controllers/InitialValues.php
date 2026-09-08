@@ -17,8 +17,10 @@ if (! $main) {
 config(['app.nombre_principal' => $main->name]);
 
 $frontPreview = front_preview::first();
-$appUrl = rtrim((string) config('app.url'), '/').'/';
-config(['app.front_url' => $frontPreview->url ?? $appUrl]);
+$defaultPreview = rtrim((string) config('app.front_preview_url'), '/').'/';
+$stored = trim((string) ($frontPreview->url ?? ''));
+$useDefault = $stored === '' || str_contains($stored, 'localhost');
+config(['app.front_url' => $useDefault ? $defaultPreview : $stored]);
 
 $navbar = navbar::first();
 if (! $navbar) {
