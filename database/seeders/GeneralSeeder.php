@@ -16,7 +16,7 @@ class GeneralSeeder extends Seeder
      */
     public function run()
     {
-        $appUrl = rtrim((string) env('APP_URL', 'http://localhost'), '/').'/';
+        $appUrl = rtrim((string) config('app.front_preview_url'), '/').'/';
 
         DB::table('mains')->truncate();
         DB::table('mains')->insert([
